@@ -16,23 +16,26 @@ type WebHook struct {
 }
 
 type SidecarConfig struct {
-	Template         string `json:"template"`
-	VaultAgentConfig string `json:"vault-agent-config"`
+	Template             string `json:"template"`
+	VaultAgentConfig     string `json:"vault-agent-config"`
+	VaultAgentConfigInit string `json:"vault-agent-config-init"`
 }
 
 type SidecarData struct {
-	Name          string
-	Container     corev1.Container
-	TokenVolume   string
-	VaultSecret   string
-	PropertiesExt string
-	VaultRole     string
+	Name            string
+	Container       corev1.Container
+	TokenVolume     string
+	VaultSecret     string
+	PropertiesExt   string
+	VaultRole       string
+	VaultSkipVerify string
 }
 
 type SidecarInject struct {
-	Containers  []corev1.Container   `yaml:"containers"`
-	Volumes     []corev1.Volume      `yaml:"volumes"`
-	VolumeMount []corev1.VolumeMount `yaml:"volumeMounts"`
+	Containers     []corev1.Container   `yaml:"containers"`
+	InitContainers []corev1.Container   `yaml:"initContainers"`
+	Volumes        []corev1.Volume      `yaml:"volumes"`
+	VolumeMount    []corev1.VolumeMount `yaml:"volumeMounts"`
 }
 
 type registeredAnnotation struct {

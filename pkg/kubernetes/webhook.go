@@ -2,15 +2,15 @@ package kubernetes
 
 import (
 	"github.com/gin-gonic/gin"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/kubernetes/pkg/apis/core/v1"
 	"net/http"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -28,13 +28,15 @@ var (
 		{"sidecar.agent.vaultproject.io/secret-key", alwaysValidFunc},
 		{"sidecar.agent.vaultproject.io/properties-ext", alwaysValidFunc},
 		{"sidecar.agent.vaultproject.io/vault-role", alwaysValidFunc},
+		{"sidecar.agent.vaultproject.io/vault-skip-verify", alwaysValidFunc},
 	}
 
-	annotationPolicy        = annotationRegistry[0]
-	annotationStatus        = annotationRegistry[1]
-	annotationSecret        = annotationRegistry[2]
-	annotationPropertiesExt = annotationRegistry[3]
-	annotationVaultRole     = annotationRegistry[4]
+	annotationPolicy          = annotationRegistry[0]
+	annotationStatus          = annotationRegistry[1]
+	annotationSecret          = annotationRegistry[2]
+	annotationPropertiesExt   = annotationRegistry[3]
+	annotationVaultRole       = annotationRegistry[4]
+	annotationVaultSkipVerify = annotationRegistry[5]
 
 	ignoredNamespaces = []string{
 		metav1.NamespaceSystem,
@@ -97,12 +99,13 @@ func (wk *WebHook) admit(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse 
 	}
 
 	data := SidecarData{
-		Name:          name,
-		Container:     pod.Spec.Containers[0],
-		TokenVolume:   FindTokenVolumeName(pod.Spec.Volumes),
-		VaultSecret:   GetAnnotationValue(pod, annotationSecret, ""),
-		PropertiesExt: GetAnnotationValue(pod, annotationPropertiesExt, "yaml"),
-		VaultRole:     GetAnnotationValue(pod, annotationVaultRole, "example"),
+		Name:            name,
+		Container:       pod.Spec.Containers[0],
+		TokenVolume:     FindTokenVolumeName(pod.Spec.Volumes),
+		VaultSecret:     GetAnnotationValue(pod, annotationSecret, ""),
+		PropertiesExt:   GetAnnotationValue(pod, annotationPropertiesExt, "yaml"),
+		VaultRole:       GetAnnotationValue(pod, annotationVaultRole, "example"),
+		VaultSkipVerify: GetAnnotationValue(pod, annotationVaultSkipVerify, "false"),
 	}
 
 	//vault SidecarConfig map

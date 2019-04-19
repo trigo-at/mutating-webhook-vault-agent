@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/openlab-red/mutating-webhook-vault-agent/pkg/engine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/openlab-red/mutating-webhook-vault-agent/pkg/engine"
 )
 
 var handlerCmd = &cobra.Command{
@@ -17,6 +17,6 @@ var handlerCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(handlerCmd)
-	viper.SetDefault("log-level", "INFO")
+	viper.SetDefault("log-level", "DEBUG")
 	viper.SetDefault("port", "8080")
 }

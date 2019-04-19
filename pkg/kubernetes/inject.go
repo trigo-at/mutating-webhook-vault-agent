@@ -1,18 +1,19 @@
 package kubernetes
 
 import (
-	"strings"
 	"bytes"
-	"github.com/sirupsen/logrus"
-	"text/template"
+	"encoding/json"
 	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"encoding/json"
+	"strings"
+	"text/template"
 )
 
 const (
-	VaultAgentConfig = "vault-agent-config"
+	VaultAgentConfig     = "vault-agent-config"
+	VaultAgentConfigInit = "vault-agent-configi-init"
 )
 
 func injectData(data *SidecarData, config *SidecarConfig) (*SidecarInject, error) {
@@ -139,7 +140,7 @@ func executeTemplate(source string, data interface{}) (*bytes.Buffer, error) {
 	return &tmpl, nil
 }
 
-func unmarshalTemplate(tmpl *bytes.Buffer, target interface{}) (error) {
+func unmarshalTemplate(tmpl *bytes.Buffer, target interface{}) error {
 	log.Debugf("Template executed, %s", string(tmpl.Bytes()))
 
 	if err := yaml.Unmarshal(tmpl.Bytes(), &target); err != nil {

@@ -8,6 +8,40 @@ data:
       volumeMounts:
       - mountPath: /var/run/secrets/vaultproject.io
         name: vault-agent-volume
+      initContainers:
+      - image: vault:latest
+        name: vault-agent-init
+        args:
+        - agent
+        - -log-level=debug
+        - -config=/vault/config/agent.config
+        env:
+        - name: SKIP_SETCAP
+          value: 'true'
+        - name: VAULT_ADDR
+          value: https://vault.hashicorp-vault:8200
+        - name: VAULT_SKIP_VERIFY
+          value: {{ .VaultSkipVerify }}
+        - name: VAULT_CAPATH
+          value: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        volumeMounts:
+        - mountPath: /vault/config/agent.config
+          subPath: agent.config-init
+          name: vault-config-init
+        - mountPath: /var/run/secrets/vaultproject.io
+          name: vault-agent-volume
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: {{ .TokenVolume }}
+        securityContext:
+          capabilities:
+            drop:
+              - KILL
+              - MKNOD
+              - SETGID
+              - SETUID
+          privileged: false
+          runAsNonRoot: true
+          RunAsUser: {{ .Container.SecurityContext.RunAsUser }}
       containers:
       - image: vault:latest
         name: vault-agent
@@ -19,7 +53,9 @@ data:
         - name: SKIP_SETCAP
           value: 'true'
         - name: VAULT_ADDR
-          value: https://vault.hashicorp-vault.svc:8200
+          value: https://vault.hashicorp-vault:8200
+        - name: VAULT_SKIP_VERIFY
+          value: {{ .VaultSkipVerify }}
         - name: VAULT_CAPATH
           value: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         volumeMounts:
@@ -48,11 +84,13 @@ data:
           - name: LOG_LEVEL
             value: 'DEBUG'
           - name: VAULT_ADDR
-            value: https://vault.hashicorp-vault.svc:8200
+            value: https://vault.hashicorp-vault:8200
           - name: VAULT_CAPATH
             value: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
           - name: VAULT_TOKEN
             value: /var/run/secrets/vaultproject.io/token
+          - name: VAULT_SKIP_VERIFY
+            value: {{ .VaultSkipVerify }}
           - name: VAULT_SECRET
             value: {{ .VaultSecret }}
           - name: PROPERTIES_FILE
@@ -87,9 +125,35 @@ data:
               path: agent.config
           name: vault-agent-config-{{ .Name }}
         name: vault-config
+      - configMap:
+          items:
+            - key: vault-agent-config-init
+              path: agent.config-init
+          name: vault-agent-config-init-{{ .Name }}
+        name: vault-config-init
     vault-agent-config: |-
       pid_file = "/var/run/secrets/vaultproject.io/pid"
 
+      auto_auth {
+              method "kubernetes"  {
+                      type = "kubernetes"
+                      mount_path = "auth/kubernetes"
+                      config = {
+                              role = "{{ .VaultRole }}"
+                              jwt = "@/var/run/secrets/kubernetes.io/serviceaccount/token"
+                      }
+              }
+
+              sink "file" {
+                      type = "file"
+                      config = {
+                              path = "/var/run/secrets/vaultproject.io/token"
+                      }
+              }
+      }
+    vault-agent-config-init: |-
+      pid_file = "/var/run/secrets/vaultproject.io/pid"
+      exit_after_auth = "true"
       auto_auth {
               method "kubernetes"  {
                       type = "kubernetes"

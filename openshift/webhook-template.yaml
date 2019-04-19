@@ -183,5 +183,5 @@ parameters:
 - name: LOG_LEVEL
   description: Log level of the application
   required: true
-  value: "INFO"
+  value: "DEBUG"
 
